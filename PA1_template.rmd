@@ -1,0 +1,155 @@
+---
+title: "Reproducible Reserch Peer-graded Assignment Course Project 1"
+author: "Imene Ezzeddine"
+date: "2023-01-03"
+output:
+html_document: default
+lagnguage: eng
+---
+
+# Loading and preprocessing the data
+
+```{r, echo=TRUE}
+knitr::opts_chunk$set(fig.path = "figures/")
+path <- "C:/Users/dell/Desktop/activity.csv"
+data <- read.csv(path, sep = ",", na.strings = "NA")
+```
+
+# What is mean total number of steps taken per day?
+
+## Calculate the total number of steps taken per day
+
+```{r, echo=TRUE}
+library(dplyr)
+TS <- 
+  data %>% 
+  group_by(date) %>% 
+  summarise(
+    total_steps = sum(steps, na.rm = TRUE)
+  )
+```
+
+## Make a histogram of the total number of steps taken each day
+
+```{r, echo=TRUE}
+p1 <- plot(as.Date(TS$date), TS$total_steps, main = "Daily total steps", xlab = "Date", 
+    ylab = "Total Steps",  type = "h", col="red")
+```
+
+## Mean of the total number of steps taken per day
+
+```{r, echo=TRUE}
+mean(TS$total_steps)
+```
+
+## Median of the total number of steps taken per day
+
+```{r, echo=TRUE}
+median(TS$total_steps)
+```
+
+# Average daily activity pattern
+
+```{r, echo=TRUE}
+library(dplyr)
+AVRG <- 
+  data %>% 
+  group_by(interval) %>% 
+  summarise(
+    Average_steps = mean(steps, na.rm = TRUE)
+  )
+```
+
+## Time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+```{r, echo=TRUE}
+plot(AVRG$interval, AVRG$Average_steps, main = "Time series plot of the
+     average number of steps taken", xlab="5-minute interval", 
+     ylab = "Average number of steps", type="l", col="blue", lwd=2)
+```
+
+## 5-minute interval, on average across all the days in the dataset, that contains the maximum number of steps
+
+```{r, echo=TRUE}
+as.numeric(AVRG[which.max(AVRG$Average_steps), 1])
+```
+
+# Imputing missing values
+
+## Total number of missing values in the dataset
+
+```{r, echo=TRUE}
+sum(is.na(data))
+```
+
+## Filling in all of the missing values in the dataset
+
+```{r, echo=TRUE}
+data$steps[is.na(data$steps)]<-AVRG$Average_steps
+head(data)
+```
+
+## Histogram of the total number of steps taken each day
+
+```{r, echo=TRUE}
+TS_no_NAS <- 
+  data %>% 
+  group_by(date) %>% 
+  summarise(
+    total_steps = sum(steps, na.rm = TRUE)
+  )
+p2 <- plot(as.Date(TS_no_NAS$date), TS_no_NAS$total_steps, main = "Daily total steps", xlab = "Date", ylab = "Total Steps",  type = "h", col="red")
+```
+
+## Mean steps
+
+```{r, echo=TRUE}
+mean(TS_no_NAS$total_steps)
+```
+
+## Median steps
+
+```{r, echo=TRUE}
+median(TS_no_NAS$total_steps)
+```
+
+## Impact of imputing missing data on the estimates of the total daily number of steps
+
+Only a slight difference can be observed.
+
+# Differences in activity patterns between weekdays and weekends
+
+## Create a new factor variable in the dataset with two levels -- "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+
+```{r, echo=TRUE, message=FALSE}
+days <- weekdays(as.Date(data$date), abbreviate = TRUE)
+data$days <- days
+head(data)
+
+library(dplyr)
+data <- 
+  data %>%
+  mutate(day_type= case_when(
+      days %in% c("sam.", "dim.") ~ "weekend"
+    , TRUE ~ "weekday"
+  ))
+head(data)
+```
+
+## Panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis)
+
+```{r, echo=TRUE, message=FALSE}
+library(dplyr)
+AVRG_day_type <- data %>%
+  group_by(interval, day_type)%>%
+  summarise(
+  average_steps = mean(steps)
+  )
+library(ggplot2)
+p3 <- ggplot(AVRG_day_type, aes(x=interval, y=average_steps))+
+  geom_line(color="blue")+
+  labs(title = "Averge number of steps per day", x="5-min Interval", y="Average Steps")+
+  theme(plot.title = element_text(hjust = 0.5)) +
+  facet_wrap(~day_type)
+p3
+```
